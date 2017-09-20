@@ -3,7 +3,8 @@ task automatic read_pcap_task
      string        file_name,
      ref reg       clk,
      ref reg       o_packet_en,
-     ref reg [7:0] o_packet[]
+     ref reg [7:0] o_packet[],
+     ref reg       end_read
      );
 
     localparam CLK_PAUSE = 4;
@@ -33,7 +34,9 @@ task automatic read_pcap_task
 
     automatic integer fd = $fopen(file_name,"r");
 
+    o_packet_en = 0;
     o_packet = new[0];
+    end_read=0;
 
     @(negedge clk);
     $fread( pcap_file_hdr,fd );
@@ -62,5 +65,7 @@ task automatic read_pcap_task
     end
     @(negedge clk);
     o_packet_en = 0;
+    @(negedge clk);
+    end_read = 1;
 
 endtask
