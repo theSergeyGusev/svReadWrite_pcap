@@ -29,26 +29,28 @@ task automatic read_pcap_task
     automatic reg [07:00] data_in_8b = 0;
     automatic reg [31:00] packet_lenght = 0;
     automatic integer p = 0;
-    
+    automatic integer buf_w = 0;
+
     automatic integer fd = $fopen(file_name,"r");
 
     o_packet = new[0];
 
-    @(posedge clk);
+    @(negedge clk);
     $fread( pcap_file_hdr,fd );
     while(!$feof(fd)) begin
+        @(negedge clk);
         o_packet_en = 0;
-        @(posedge clk);
         if (count_clk==CLK_PAUSE) begin
             count_clk = 0;
             $fread( pcap_pkt_hdr,fd );
             packet_lenght = {pcap_pkt_hdr.caplen[07:00],pcap_pkt_hdr.caplen[15:08],
                              pcap_pkt_hdr.caplen[23:16],pcap_pkt_hdr.caplen[31:24]};
+
             if (packet_lenght>0)  begin
-                o_packet = new[(o_packet.size()+$bitstoreal(packet_lenght))](o_packet);
+                buf_w=packet_lenght;
+                o_packet = new[buf_w];
                 while(p<packet_lenght) begin
                     $fread( data_in_8b,fd ); o_packet[p]=data_in_8b; p=p+1;
-                    p=p+1;
                 end
                 o_packet_en = 1;
             end
@@ -58,5 +60,7 @@ task automatic read_pcap_task
             count_clk = count_clk + 1;
         end
     end
-    
+    @(negedge clk);
+    o_packet_en = 0;
+
 endtask
